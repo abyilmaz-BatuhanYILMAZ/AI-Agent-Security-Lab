@@ -1,0 +1,27 @@
+name: Python validation and security regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate versioned research dataset
+        run: python -m agentsec_lab validate --dataset data/cases.json
+      - name: Run isolated test suite
+        run: python -m unittest discover -s tests -v
+      - name: Compile Python modules
+        run: python -m compileall -q agentsec_lab

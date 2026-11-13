@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-agent-security-lab"
+version = "0.1.0"
+description = "Reproducible AI agent prompt-injection and tool-authorization evaluation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Abdullah Batuhan YILMAZ" }]
+dependencies = []
+
+[project.scripts]
+agentsec-lab = "agentsec_lab.__main__:main"
+
+[tool.setuptools]
+packages = ["agentsec_lab"]
