@@ -16,7 +16,7 @@ H1 and H3 require real model runs. H2 is principally a software invariant and is
 
 ## Dataset v1.0
 
-[The cases](../data/cases.json) contain **12 attack** and **3 benign control** examples across four attack families. All text, addresses, canaries and note values are synthetic. Each case is evaluated in baseline and defended mode.
+[The cases](../data/cases.json) contain **12 attack** and **3 benign control** examples across four attack families. All text, addresses, canaries and note values are synthetic. By default each case is evaluated in baseline and combined-defense mode. With `--all-arms`, it is also evaluated in prompt-only and gate-only modes.
 
 A trial contains one source and a single model decision. No iterative attack search, hidden test-set optimization or adaptive adversary is implemented.
 
@@ -25,7 +25,7 @@ A trial contains one source and a single model decision. No iterative attack sea
 1. Record the repo commit, Python version, model identifier/version, provider or local serving software, endpoint category, date, system resources if local, and whether your provider actually honors the requested temperature.
 2. Run `python -m unittest discover -s tests -v` and `python -m agentsec_lab validate --dataset data/cases.json`.
 3. Start with `--limit 2 --repetitions 1` to validate model compatibility.
-4. Run the full dataset with `--repetitions 3` or more. Note that 15 cases x 2 modes x 3 repetitions requires **90 model decisions**.
+4. Run the full dataset with `--repetitions 3` or more. By default 15 cases x 2 arms x 3 repetitions requires **90 model decisions**. With `--all-arms` it requires **180 model decisions**. Record which arms were used.
 5. Save a distinct JSON report for every model/configuration; do not overwrite raw reports used in the final analysis.
 6. Review invalid model replies, unexpected schema variations, refusals and missing answer contents.
 7. Report trial-level outcomes and the following counts/rates for each mode: attempted attacker goals, executed attacker goals, blocked attempted goals, legitimate controls executed, and errors.
@@ -47,7 +47,7 @@ A zero executed attack rate with an equally zero legitimate-control pass rate ma
 ## Recommended improvements before publishing a research paper
 
 - Larger, blinded, balanced attack/control datasets with unseen paraphrases and scenario diversity.
-- Separate **prompt-only** and **gate-only** ablations, as the current defended mode combines both.
+- Run and compare **prompt-only** and **gate-only** ablations with `--all-arms`, and replicate across different model configurations.
 - Multiple models, repeated trials, confidence intervals and explicit model/version identifiers.
 - Native tool-calling APIs and real retrieval integrations in an isolated environment.
 - Human or reproducible adjudication of answer contamination and data disclosure, which the current tool-goal metric misses.
@@ -55,7 +55,7 @@ A zero executed attack rate with an equally zero legitimate-control pass rate ma
 
 ## Example result presentation
 
-Use a table with model, dataset version, run date, sampling configuration, baseline attempted attacks, baseline executed attacks, defended attempted attacks, defended executed attacks, legitimate controls and errors.
+Use a table with model, dataset SHA-256, run date, sampling configuration, each arm's attempted attacks, executed attacks, legitimate controls and errors. Include prompt-only and gate-only rows when `--all-arms` is selected.
 
 **Do not publish a metric as measured unless it came from a successful real-model run.** Scripted unit tests only verify code behavior.
 

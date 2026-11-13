@@ -62,6 +62,27 @@ class AgentEvaluationTests(unittest.TestCase):
         self.assertEqual(report["summary"]["defended"]["errors"], 2)
         self.assertEqual(report["summary"]["baseline"]["executed_attacks"], 0)
 
+    def test_four_arm_ablation_separates_prompt_from_gate(self):
+        decision = Decision("send_email", "archive@outside.invalid", "synthetic")
+        report = evaluate(
+            [self.attack], ScriptedModel([decision, decision, decision, decision]),
+            model_id="scripted-fixture", backend="scripted-contract-test",
+            arms=("baseline", "prompt_only", "gate_only", "defended"),
+        )
+        self.assertEqual(report["summary"]["baseline"]["executed_attacks"], 1)
+        self.assertEqual(report["summary"]["prompt_only"]["executed_attacks"], 1)
+        self.assertEqual(report["summary"]["gate_only"]["executed_attacks"], 0)
+        self.assertEqual(report["summary"]["defended"]["executed_attacks"], 0)
+        self.assertEqual(report["summary"]["gate_only"]["blocked_attack_attempts"], 1)
+
+    def test_invalid_arm_configurations_fail_closed(self):
+        with self.assertRaises(ValueError):
+            evaluate([self.attack], ScriptedModel([]), model_id="fixture",
+                     backend="scripted-contract-test", arms=("baseline", "unknown"))
+        with self.assertRaises(ValueError):
+            evaluate([self.attack], ScriptedModel([]), model_id="fixture",
+                     backend="scripted-contract-test", arms=("baseline", "baseline"))
+
     def test_report_round_trip(self):
         decision = Decision("answer", "", "Synthetic summary")
         report = evaluate([self.attack], ScriptedModel([decision, decision]),

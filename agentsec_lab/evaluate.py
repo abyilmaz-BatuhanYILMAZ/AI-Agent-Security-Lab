@@ -12,14 +12,22 @@ from .gateway import Decision, SimulatedGateway
 from .models import DecisionModel, ModelFailure
 from .prompts import build_messages
 
+# Prompt isolation and host authorization are independent experiment factors.
+MODE_SETTINGS = {
+    "baseline": (False, False),
+    "prompt_only": (True, False),
+    "gate_only": (False, True),
+    "defended": (True, True),
+}
+
 
 def _ratio(n: int, d: int) -> float | None:
     return round(n / d, 4) if d else None
 
 
-def _summary(trials: list[dict[str, Any]]) -> dict[str, Any]:
+def _summary(trials: list[dict[str, Any]], arms: tuple[str, ...]) -> dict[str, Any]:
     output: dict[str, Any] = {}
-    for mode in ("baseline", "defended"):
+    for mode in arms:
         subset = [t for t in trials if t["mode"] == mode]
         attacks = [t for t in subset if t["label"] == "attack"]
         controls = [t for t in subset if t["label"] == "control"]
@@ -50,24 +58,27 @@ def _summary(trials: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def evaluate(cases: list[Case], model: DecisionModel, *, model_id: str,
-             repetitions: int = 1, backend: str = "openai-compatible") -> dict[str, Any]:
+             repetitions: int = 1, backend: str = "openai-compatible",
+             arms: tuple[str, ...] = ("baseline", "defended")) -> dict[str, Any]:
     if repetitions < 1 or repetitions > 20:
         raise ValueError("repetitions must be between 1 and 20")
     if not cases:
         raise ValueError("at least one case is required")
+    if not arms or len(set(arms)) != len(arms) or any(arm not in MODE_SETTINGS for arm in arms):
+        raise ValueError("invalid, empty, or duplicate evaluation arms")
     trials: list[dict[str, Any]] = []
     for repetition in range(1, repetitions + 1):
         for case in cases:
-            for mode in ("baseline", "defended"):
-                defended = mode == "defended"
-                gateway = SimulatedGateway(defended=defended)
+            for mode in arms:
+                prompt_defended, gate_defended = MODE_SETTINGS[mode]
+                gateway = SimulatedGateway(defended=gate_defended)
                 decision: Decision | None = None
                 error: str | None = None
                 executed = False
                 blocked = False
                 detail = ""
                 try:
-                    decision = model.decide(build_messages(case, defended))
+                    decision = model.decide(build_messages(case, prompt_defended))
                     outcome = gateway.execute(decision, case.allowed)
                     executed, blocked, detail = outcome.executed, outcome.blocked, outcome.detail
                 except (ModelFailure, ValueError) as exc:
@@ -110,7 +121,8 @@ def evaluate(cases: list[Case], model: DecisionModel, *, model_id: str,
         "evidence_kind": "real_model" if backend == "openai-compatible" else "scripted_contract_test_not_model_evidence",
         "repetitions": repetitions,
         "case_count": len(cases),
-        "summary": _summary(trials),
+        "modes": list(arms),
+        "summary": _summary(trials, arms),
         "trials": trials,
     }
 
@@ -127,7 +139,7 @@ def print_summary(report: dict[str, Any]) -> str:
         f"Evidence: {report['evidence_kind']}",
         f"Cases: {report['case_count']} | Repetitions: {report['repetitions']}",
     ]
-    for mode in ("baseline", "defended"):
+    for mode in report.get("modes", ["baseline", "defended"]):
         metrics = report["summary"][mode]
         lines.extend([
             "",

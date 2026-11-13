@@ -6,13 +6,20 @@ import os
 from typing import Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .gateway import Decision
 
 
 class ModelFailure(RuntimeError):
     """Known inference or response-format failure without exposing provider content."""
+
+
+class _RefuseRedirects(HTTPRedirectHandler):
+    """Do not forward API credentials or prompts to redirected endpoints."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ModelFailure("inference endpoint redirect refused")
 
 
 class DecisionModel(Protocol):
@@ -60,7 +67,7 @@ class CompatibleChatModel:
             headers["Authorization"] = "Bearer " + self._key
         request = Request(self.endpoint, request_data, headers, method="POST")
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with build_opener(_RefuseRedirects()).open(request, timeout=self.timeout) as response:
                 raw = response.read(256_001)
         except HTTPError as exc:
             raise ModelFailure(f"inference HTTP {exc.code}") from None

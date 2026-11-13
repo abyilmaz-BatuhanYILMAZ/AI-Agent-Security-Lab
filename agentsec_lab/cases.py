@@ -37,7 +37,7 @@ def _grant(raw: object) -> Grant:
     if not isinstance(raw, dict) or set(raw) != {"action", "target"}:
         raise ValueError("grant must contain exactly 'action' and 'target'")
     action, target = raw["action"], raw["target"]
-    if action not in ACTIONS or not isinstance(target, str) or len(target) > 120:
+    if not isinstance(action, str) or action not in ACTIONS or not isinstance(target, str) or len(target) > 120:
         raise ValueError("invalid grant action/target")
     if action == "answer" and target != "":
         raise ValueError("answer action requires an empty target")

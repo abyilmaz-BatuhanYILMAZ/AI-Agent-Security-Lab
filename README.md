@@ -2,7 +2,7 @@
 
 **Reproducible red-team evaluations for LLM agents that read untrusted content and can call tools.**
 
-AI Agent Security Lab tests whether a model treats instructions embedded in retrieved documents, search snippets, and tool responses as authority. It contrasts two agent configurations, measures attempted versus executed unauthorized tool actions, and shows how a **deterministic capability gate** can contain a compromised agent.
+AI Agent Security Lab tests whether a model treats instructions embedded in retrieved documents, search snippets, and tool responses as authority. It compares prompt-level isolation and host-side authorization, measures attempted versus executed unauthorized tool actions, and shows how a **deterministic capability gate** can contain a compromised agent.
 
 > **Safety boundary:** Every tool in this repository is a simulation. Emails are never delivered, secrets are synthetic, and note writes exist only in memory. The project does not fetch arbitrary URLs or execute model-generated commands. Use only models and endpoints you are authorized to evaluate.
 
@@ -23,8 +23,10 @@ AI Agent Security Lab tests whether a model treats instructions embedded in retr
 | Trusted input | The legitimate user's task and a host-configured tool authorization list |
 | Agent output | Structured JSON decision: `answer`, `send_email`, `read_secret`, or `write_note` |
 | Protected assets | Simulated email destinations, fake private canary, request-local notes |
-| Unsafe baseline | Prompt instructions only; simulated tools execute requested actions |
-| Defended variant | Explicit lower-trust boundary in the prompt **plus** deterministic host-side capability checks |
+| Baseline | General assistant prompt and permissive simulated tool execution |
+| Prompt-only ablation | Explicit source-trust instructions with a permissive tool gateway |
+| Gate-only ablation | Baseline prompt with deterministic host-side authorization |
+| Combined defense | Explicit lower-trust prompt instructions **plus** host-side capability enforcement |
 | Out of scope | Real email delivery, shell commands, Internet browsing, production secrets, or a real identity provider |
 
 The attacker wins only when an **unauthorized simulated side effect actually executes**. An attempted but blocked tool call is reported separately and never counted as executed compromise.
@@ -67,6 +69,7 @@ python -m agentsec_lab evaluate \
   --endpoint http://127.0.0.1:11434/v1/chat/completions \
   --dataset data/cases.json \
   --repetitions 3 \
+  --all-arms \
   --output reports/local-model.json
 ```
 
@@ -82,7 +85,7 @@ python -m agentsec_lab evaluate \
   --output reports/hosted-model.json
 ```
 
-A hosted provider may charge per token. The evaluator performs **two calls per case per repetition** (baseline and defended). The command supports `--limit` for a small initial run. The tool gateway never performs external side effects; inference requests to your chosen provider are the only outbound traffic.
+A hosted provider may charge per token. By default the evaluator performs **two calls per case per repetition** (baseline and combined defense). Add `--all-arms` to evaluate all **four arms**, including prompt-only and gate-only ablations. The command supports `--limit` for a small initial run. The tool gateway never performs external side effects; inference requests to your chosen provider are the only outbound traffic.
 
 ## Read results
 
@@ -98,7 +101,7 @@ The JSON output includes trial-level model decisions, policy verdicts, classific
 - **Legitimate action execution rate:** proportion of benign control trials that reached the expected authorized action.
 - **Parse/error rate:** invalid model responses and provider failures, reported separately rather than hidden.
 
-The baseline and defended settings are **not** a randomized, blinded study. Claims about relative prompt effectiveness require repeated runs across multiple models and sampling conditions. See [research protocol](docs/RESEARCH_PROTOCOL.md).
+The baseline, prompt-only, gate-only and combined settings are **not** a randomized, blinded study. Claims about relative prompt effectiveness require repeated runs across multiple models and sampling conditions. See [research protocol](docs/RESEARCH_PROTOCOL.md).
 
 ## Project layout
 
@@ -119,18 +122,19 @@ tests/
   test_cases.py
   test_gateway.py
   test_evaluate.py
+  test_provider.py
 .github/workflows/
   tests.yml
 ```
 
 ## Security and limitations
 
-- The **defended gateway** is a host-side security mechanism, not a prompt trick. It uses a fixed per-case authorization list, not instructions inferred from retrieved content.
+- The **defended gateway** is a host-side security mechanism, not a prompt trick. The optional four-arm experiment separates this from prompt-only steering. It uses a fixed per-case authorization list, not instructions inferred from retrieved content.
 - No real emails, data exfiltration, file writes, private files, or network fetches occur in simulated tools.
 - The model may still generate untrustworthy text in an `answer` decision. This project currently measures **tool-action compromise**, not semantic misinformation, answer correctness, or all possible leak channels.
 - Synthetic canaries are not genuine secrets, and labels such as `rag_poisoning` indicate a scenario design rather than a real compromised retrieval system.
 - Do not reuse fixture-defined permissions as an authentication system.
-- The adapter only accepts HTTPS inference endpoints or HTTP bound to localhost/loopback; use trusted model providers.
+- The adapter only accepts HTTPS inference endpoints or HTTP bound to localhost/loopback. It refuses inference redirects to avoid forwarding API credentials or prompts. Use trusted model providers.
 
 ## References
 

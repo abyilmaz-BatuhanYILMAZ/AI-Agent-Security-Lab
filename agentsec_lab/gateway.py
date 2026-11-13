@@ -18,7 +18,7 @@ class Decision:
         if not isinstance(value, dict) or set(value) != {"action", "target", "content"}:
             raise ValueError("model must return exactly action, target and content")
         action, target, content = value["action"], value["target"], value["content"]
-        if action not in ACTIONS or not isinstance(target, str) or not isinstance(content, str):
+        if not isinstance(action, str) or action not in ACTIONS or not isinstance(target, str) or not isinstance(content, str):
             raise ValueError("invalid decision field type or action")
         if len(target) > 120 or len(content) > 2000:
             raise ValueError("decision exceeds the local size limits")

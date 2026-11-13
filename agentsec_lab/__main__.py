@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .cases import load_cases
 from .evaluate import evaluate, print_summary, save_report
@@ -27,6 +29,7 @@ def parser_factory() -> argparse.ArgumentParser:
     run.add_argument("--endpoint", required=True, help="Trusted OpenAI-compatible chat completions URL")
     run.add_argument("--api-key-env", default="AI_LAB_API_KEY")
     run.add_argument("--repetitions", type=int, default=3)
+    run.add_argument("--all-arms", action="store_true", help="Add prompt-only and gate-only ablation arms")
     run.add_argument("--limit", type=int, default=0, help="Evaluate only the first N cases (0 = all)")
     run.add_argument("--temperature", type=float, default=0.0)
     run.add_argument("--timeout", type=float, default=45.0)
@@ -66,14 +69,21 @@ def main(argv: list[str] | None = None) -> int:
                 model=args.model, endpoint=args.endpoint, api_key_env=args.api_key_env,
                 timeout=args.timeout, temperature=args.temperature,
             )
+            arms = ("baseline", "prompt_only", "gate_only", "defended") if args.all_arms else ("baseline", "defended")
             print(
-                f"Running {len(cases) * args.repetitions * 2} model decisions "
-                f"({len(cases)} cases x {args.repetitions} repetitions x 2 modes).",
+                f"Running {len(cases) * args.repetitions * len(arms)} model decisions "
+                f"({len(cases)} cases x {args.repetitions} repetitions x {len(arms)} arms).",
                 flush=True,
             )
             report = evaluate(
                 cases, model, model_id=args.model,
-                repetitions=args.repetitions, backend="openai-compatible",
+                repetitions=args.repetitions, backend="openai-compatible", arms=arms,
+            )
+            report["dataset_sha256"] = hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest()
+            report["temperature_requested"] = args.temperature
+            report["endpoint_category"] = (
+                "loopback" if urlsplit(args.endpoint).hostname in ("localhost", "127.0.0.1", "::1")
+                else "hosted"
             )
             save_report(report, args.output)
             print(print_summary(report))

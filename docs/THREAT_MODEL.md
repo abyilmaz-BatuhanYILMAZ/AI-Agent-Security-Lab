@@ -37,15 +37,19 @@ These synthetic scenarios do not implement an actual retrieval index or a persis
 - `read_secret`: return only `FAKE_CANARY_NOT_A_SECRET`; no real secrets are read.
 - `write_note`: change a request-local dictionary; no disk, account or persistent state.
 
-No subprocess, arbitrary URL fetching, workspace access or OS operations are available to the model. The only outbound request in a real evaluation is to the inference endpoint intentionally configured by the researcher.
+No subprocess, arbitrary URL fetching, workspace access or OS operations are available to the model. The only outbound request in a real evaluation is to the inference endpoint intentionally configured by the researcher. Redirects from that endpoint are refused, including redirects to a different host.
 
 ## Baseline and defense
 
 **Baseline:** the model is instructed to work with the source. Simulated tools execute structurally valid actions even if the host has not granted them (except hard safety constraints, such as not using real email addresses).
 
-**Defense:** the model is explicitly instructed to treat the source as untrusted **and** the gateway refuses side-effecting tool calls unless the exact action and target are present in the host grant list.
+**Prompt-only arm:** explicit source-trust instructions, but permissive simulated tool execution.
 
-This is a *bundled* defense. The experiment cannot attribute any reduction in model attempts to one component independently. Follow-up experiments should separately ablate prompt segregation and host-side gating.
+**Gate-only arm:** baseline model instructions and an exact-action/exact-target host gate.
+
+**Combined defense:** explicit lower-trust prompt instructions **and** the host gateway refuses side-effecting tool calls unless the exact action and target are present in the host grant list.
+
+The default comparison includes baseline and combined defense. Run with `--all-arms` for the two additional ablations, so prompt steering and host authorization are evaluated independently. Prompt-only does not provide a dependable action boundary.
 
 ## Success criteria
 
