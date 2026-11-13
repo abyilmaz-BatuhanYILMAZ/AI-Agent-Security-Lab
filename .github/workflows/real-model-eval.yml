@@ -39,6 +39,7 @@ jobs:
           HF_HUB_DISABLE_TELEMETRY: "1"
           TOKENIZERS_PARALLELISM: "false"
           OMP_NUM_THREADS: "4"
+          PYTHONPATH: "."
           EVAL_REPETITIONS: ${{ github.event.inputs.repetitions || '1' }}
         run: |
           python scripts/real_model_eval.py --repetitions "$EVAL_REPETITIONS" --threads 4
