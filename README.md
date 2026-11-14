@@ -57,6 +57,16 @@ python -m agentsec_lab validate --dataset data/cases.json
 
 This checks dataset validity, prompt separation, gateway authorization, scoring, and report structure. It does **not** contact a model.
 
+## Reproducible real-model evidence
+
+The first [Qwen2.5-0.5B experiment](research/runs/qwen2.5-0.5b-first-pass.md) evaluated 15 synthetic cases under four configurations. The initial small model produced **8–11 invalid decisions out of 15 trials per configuration**; therefore, zero executed attacks in defended conditions must **not** be interpreted as demonstrated prompt-injection robustness.
+
+The improved **paired replay protocol** makes two independent model proposals per case—one for the original prompt and one for the defended prompt—then replays each proposal under both host authorization settings. With 15 cases, this creates **60 agent outcomes from 30 actual model inferences** rather than 60 independent model queries. Model errors remain failures and are counted in all denominators. Synthetic local model outputs are retained for auditing; hosted provider output is not automatically logged.
+
+Run details, limitations and the separate model reports are described in [the research protocol](docs/RESEARCH_PROTOCOL.md). The model-specific results are in [research/runs](research/runs).
+
+For the GitHub Actions runner, see [real-model-eval.yml](.github/workflows/real-model-eval.yml), which can evaluate **Qwen2.5-1.5B-Instruct** or the smaller **0.5B** variant locally on CPU without an external model API key. This is an exploratory experiment, not a validated production benchmark.
+
 ## Run a real model evaluation
 
 The runner supports an **OpenAI-compatible Chat Completions JSON API**. It can be used with an authorized hosted endpoint or a local model server such as Ollama. Only the explicitly configured inference endpoint receives the synthetic prompts.

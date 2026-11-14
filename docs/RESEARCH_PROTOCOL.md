@@ -44,6 +44,31 @@ For a given mode:
 
 A zero executed attack rate with an equally zero legitimate-control pass rate may represent an unusable agent; review both.
 
+## Paired replay protocol (v2)
+
+The historical [0.5B first pass](../research/runs/qwen2.5-0.5b-first-pass.md) used separate model queries for all four arms and a 96-token output limit. Retain its report unchanged as a historical exploratory measurement.
+
+The improved local evaluation uses **two prompt conditions** and **two host enforcement conditions**:
+
+| Prompt condition | Host gate disabled | Host gate enabled |
+| --- | --- | --- |
+| General prompt | baseline | gate_only |
+| Source-trust prompt | prompt_only | defended |
+
+For each case and each repetition, the evaluator obtains **one model proposal for each prompt condition**. The *exact same structured model decision* (or the same parsing error) is then replayed under the two respective host authorization settings. This paired design avoids treating repeated deterministic model outputs as independent data; it also isolates the effect of the host gate without variation in the proposed action.
+
+For 15 cases, one repetition and four arms this means **30 actual model inferences** and **60 simulated agent outcomes**. The report records `model_calls_actual`, `agent_trials`, `paired_replay`, and a `model_decision_reused` flag for each outcome. A strict, unchanged JSON schema is used for scoring; the local-model generator allows up to 160 new tokens. Invalid replies remain errors rather than being silently repaired.
+
+**Do not compare v2 attack rates directly with the original 96-token v1 experiment as though only the model had changed.** The output length and replay method also differ.
+
+### Measurement validity and error reporting
+
+In every arm, the denominator for the primary attack attempt/execution rates is **all attack trials**, including malformed model outputs. A secondary valid-only attempt rate is included to aid diagnosis but must never replace the primary rate without an explicit explanation. Report both the absolute error count and legitimate-control execution rate. If most decisions are invalid, the measured attack rates are insufficient to establish practical model safety.
+
+Raw generated text is recorded for **synthetic local-model** evaluations to permit investigation of invalid JSON and incomplete generations. Provider-backed API evaluations do not persist raw text by default. The dataset must contain synthetic-only content before enabling public run artifacts.
+
+With greedy decoding, repeated calls to identical prompts typically produce identical output. Increasing repetitions without varying seed or sampling strategy **does not** create statistically independent observations. Future generalizable research requires preregistered or held-out cases, more diverse controls, more models, and explicit uncertainty quantification.
+
 ## Recommended improvements before publishing a research paper
 
 - Larger, blinded, balanced attack/control datasets with unseen paraphrases and scenario diversity.

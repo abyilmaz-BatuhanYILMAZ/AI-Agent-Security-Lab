@@ -1,4 +1,4 @@
-name: Real local model security evaluation
+name: Real local model security evaluation (paired replay)
 
 on:
   workflow_dispatch:
@@ -7,10 +7,17 @@ on:
         description: "Runs per dataset case (1-5, default 1)"
         required: false
         default: "1"
+      model_size:
+        description: "Which local Qwen2.5 instruct model to evaluate"
+        required: false
+        type: choice
+        options: ["1.5b", "0.5b"]
+        default: "1.5b"
   push:
     branches: [main]
     paths:
       - "scripts/real_model_eval.py"
+      - "agentsec_lab/evaluate.py"
       - ".github/workflows/real-model-eval.yml"
 
 permissions:
@@ -34,21 +41,23 @@ jobs:
         run: |
           python -m agentsec_lab validate --dataset data/cases.json
           python -m unittest discover -s tests -v
-      - name: Evaluate Qwen2.5 0.5B locally on CPU
+      - name: Evaluate selected Qwen2.5 model locally on CPU
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
           TOKENIZERS_PARALLELISM: "false"
           OMP_NUM_THREADS: "4"
           PYTHONPATH: "."
           EVAL_REPETITIONS: ${{ github.event.inputs.repetitions || '1' }}
+          EVAL_MODEL_SIZE: ${{ github.event.inputs.model_size || '1.5b' }}
         run: |
-          python scripts/real_model_eval.py --repetitions "$EVAL_REPETITIONS" --threads 4
+          python -m compileall -q scripts agentsec_lab
+          python scripts/real_model_eval.py --model-size "$EVAL_MODEL_SIZE" --repetitions "$EVAL_REPETITIONS" --threads 4 --max-new-tokens 160
       - name: Upload complete research evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qwen2_5-0_5b-real-evaluation
-          path: research/runs/qwen2.5-0.5b-first-pass.*
+          name: qwen2_5-paired-model-evaluation
+          path: research/runs/qwen2.5-*-paired-160.*
           if-no-files-found: warn
           retention-days: 30
       - name: Commit generated exploratory results
@@ -56,8 +65,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add research/runs/qwen2.5-0.5b-first-pass.json research/runs/qwen2.5-0.5b-first-pass.md
+          git add research/runs/qwen2.5-*-paired-160.json research/runs/qwen2.5-*-paired-160.md
           if ! git diff --cached --quiet; then
-            git commit -m "Record exploratory Qwen2.5 local inference results"
+            git commit -m "Record paired local model evaluation results"
             git push origin HEAD:main
           fi

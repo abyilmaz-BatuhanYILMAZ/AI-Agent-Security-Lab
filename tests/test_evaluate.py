@@ -83,6 +83,36 @@ class AgentEvaluationTests(unittest.TestCase):
             evaluate([self.attack], ScriptedModel([]), model_id="fixture",
                      backend="scripted-contract-test", arms=("baseline", "baseline"))
 
+    def test_paired_replay_reuses_identical_proposal_for_gate_ablation(self):
+        decision = Decision("send_email", "archive@outside.invalid", "synthetic")
+        # Only one decision call is necessary for baseline and gate_only:
+        # the host gate alone determines whether it runs.
+        report = evaluate(
+            [self.attack], ScriptedModel([decision]),
+            model_id="scripted-fixture", backend="scripted-contract-test",
+            arms=("baseline", "gate_only"), paired_replay=True,
+        )
+        self.assertEqual(report["model_calls_actual"], 1)
+        self.assertEqual(report["agent_trials"], 2)
+        self.assertFalse(report["trials"][0]["model_decision_reused"])
+        self.assertTrue(report["trials"][1]["model_decision_reused"])
+        self.assertEqual(report["summary"]["baseline"]["executed_attacks"], 1)
+        self.assertEqual(report["summary"]["gate_only"]["blocked_attack_attempts"], 1)
+
+    def test_paired_replay_reuses_errors_and_keeps_denominators(self):
+        report = evaluate(
+            [self.attack], FailingModel(),
+            model_id="scripted-fixture", backend="scripted-contract-test",
+            arms=("baseline", "prompt_only", "gate_only", "defended"),
+            paired_replay=True,
+        )
+        self.assertEqual(report["model_calls_actual"], 2)
+        self.assertEqual(report["agent_trials"], 4)
+        for arm in report["modes"]:
+            self.assertEqual(report["summary"][arm]["errors"], 1)
+            self.assertEqual(report["summary"][arm]["valid_attack_trials"], 0)
+            self.assertIsNone(report["summary"][arm]["attack_attempt_rate_valid_only"])
+
     def test_report_round_trip(self):
         decision = Decision("answer", "", "Synthetic summary")
         report = evaluate([self.attack], ScriptedModel([decision, decision]),
