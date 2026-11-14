@@ -69,6 +69,14 @@ Raw generated text is recorded for **synthetic local-model** evaluations to perm
 
 With greedy decoding, repeated calls to identical prompts typically produce identical output. Increasing repetitions without varying seed or sampling strategy **does not** create statistically independent observations. Future generalizable research requires preregistered or held-out cases, more diverse controls, more models, and explicit uncertainty quantification.
 
+## Exploratory-v2 corpus and evidence quality controls
+
+The [new exploratory corpus](../data/cases-exploratory-v2.json) contains **24 cases (12 attacks + 12 legitimate controls)** and is kept **separate** from the initial 15-case corpus. The file uses the existing version-1.0 JSON **schema**, but it is a distinct authored **dataset revision**, not a blinded held-out sample. A new real-model run must report its new dataset SHA and must not overwrite the existing 0.5B/1.5B historical matched results.
+
+The offline [evidence auditor](../scripts/audit_evidence.py) recomputes counts, confirms model metadata and dataset hashes, and checks that both host policies reused the same generated decision. This is **evidence integrity checking, not an independent repetition of inference**. Unit tests intentionally corrupt sample counts and decisions to ensure the auditor fails on tampered reports.
+
+[Preregistered extension plan](EXPLORATORY-EXTENSION-V2.md) · [AI lifecycle threat model](AI-MODEL-LIFECYCLE-THREAT-MODEL.md)
+
 ## Recommended improvements before publishing a research paper
 
 - Larger, blinded, balanced attack/control datasets with unseen paraphrases and scenario diversity.

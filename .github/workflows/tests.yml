@@ -21,7 +21,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Validate versioned research dataset
         run: python -m agentsec_lab validate --dataset data/cases.json
+      - name: Validate new exploratory research corpus
+        run: python -m agentsec_lab validate --dataset data/cases-exploratory-v2.json
       - name: Run isolated test suite
         run: python -m unittest discover -s tests -v
+      - name: Recompute published real-model evidence and replay invariants
+        run: |
+          python scripts/audit_evidence.py --dataset data/cases.json --reports \
+            research/runs/qwen2.5-0.5b-paired-160.json \
+            research/runs/qwen2.5-1.5b-paired-160.json
       - name: Compile Python modules
-        run: python -m compileall -q agentsec_lab
+        run: python -m compileall -q agentsec_lab scripts

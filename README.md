@@ -71,6 +71,22 @@ Run details, limitations and the separate model reports are described in [the re
 
 For the GitHub Actions runner, see [real-model-eval.yml](.github/workflows/real-model-eval.yml), which can evaluate **Qwen2.5-1.5B-Instruct** or the smaller **0.5B** variant locally on CPU without an external model API key. This is an exploratory experiment, not a validated production benchmark.
 
+## Research quality improvements and next experimental corpus
+
+- **[Exploratory dataset v2](data/cases-exploratory-v2.json):** 24 new synthetic cases (12 adversarial, 12 legitimate controls) across three input surfaces; separate from the original 15-case dataset. **New results are not yet claimed by adding the dataset.**
+- **[Extended experiment protocol](docs/EXPLORATORY-EXTENSION-V2.md):** predeclares hypotheses, balanced controls, denominators, output-validity reporting, and non-generalizability.
+- **[Evidence integrity auditor](scripts/audit_evidence.py):** checks the previously published real-model JSON reports for dataset SHA, provenance, all four arm denominators, and paired replay invariants. Passing this check verifies stored evidence consistency **without rerunning model inference**.
+- **[AI model lifecycle threat model](docs/AI-MODEL-LIFECYCLE-THREAT-MODEL.md):** architecture-level threat modeling of model artifacts, CI/CD, registry, Kubernetes serving, retrieval and host-enforced tool boundaries. This is an analytical document, **not** a completed infrastructure penetration test.
+
+```bash
+python -m agentsec_lab validate --dataset data/cases-exploratory-v2.json
+python scripts/audit_evidence.py --dataset data/cases.json --reports \
+  research/runs/qwen2.5-0.5b-paired-160.json \
+  research/runs/qwen2.5-1.5b-paired-160.json
+```
+
+A [separate optional CPU evaluation workflow](.github/workflows/exploratory-v2-model.yml) is configured to run the 1.5B model against the new corpus. Its result must be checked before any attack/safety metric is published for v2.
+
 ## Run a real model evaluation
 
 The runner supports an **OpenAI-compatible Chat Completions JSON API**. It can be used with an authorized hosted endpoint or a local model server such as Ollama. Only the explicitly configured inference endpoint receives the synthetic prompts.
