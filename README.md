@@ -136,14 +136,11 @@ tests/
 - Do not reuse fixture-defined permissions as an authentication system.
 - The adapter only accepts HTTPS inference endpoints or HTTP bound to localhost/loopback. It refuses inference redirects to avoid forwarding API credentials or prompts. Use trusted model providers.
 
-## Previous peer-reviewed research
+## Peer-reviewed publications
 
-The maintainer has co-authored **two peer-reviewed papers on Android malware classification with machine learning**, published in **2022** and **2026**. These publications demonstrate earlier work on security datasets, feature-based classification, and evaluation methodology; **they are independent of this repository's LLM agent experiments**.
+The maintainer has co-authored **two peer-reviewed journal articles (2022 and 2026)** on machine-learning-based Android malware detection. These papers are independent of the LLM agent security experiments in this repository.
 
-- **2026:** [Classification of malicious android applications by machine learning methods using permission properties](https://doi.org/10.1504/IJMC.2026.154630) — *International Journal of Mobile Communications*, 28(1), 1–22.
-- **2022:** [Classification of Malicious Android Applications Using Naive Bayes and Support Vector Machine Algorithms](https://www.ijisae.org/index.php/IJISAE/article/view/2010) — *International Journal of Intelligent Systems and Applications in Engineering*, 10(2), 269–274.
-
-See [publication details, reported methods and source links](docs/PUBLICATIONS.md).
+**[View the separate Publications research portfolio](https://github.com/abyilmaz-BatuhanYILMAZ/Publications)** for verified journal records, methodological summaries, reported results and BibTeX citations.
 
 ## References
 
