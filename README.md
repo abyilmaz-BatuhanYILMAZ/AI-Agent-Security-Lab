@@ -59,6 +59,8 @@ This checks dataset validity, prompt separation, gateway authorization, scoring,
 
 ## Reproducible real-model evidence
 
+**Latest completed real-model experiment:** [Qwen2.5-1.5B-Instruct paired security evaluation](docs/FINDINGS-2026-11-14.md) — 30 model inferences, 60 simulated agent outcomes. Under the permissive baseline **2/12** attacker-goal calls executed; host-side authorization blocked these proposals, resulting in **0/12** executed attacker goals in the gate-only and combined configurations. **Only 1/3 benign controls passed in baseline and 0/3 in combined defense**, so this is *not* evidence of a production-ready agent. [Raw experiment evidence](research/runs/qwen2.5-1.5b-paired-160.json) and [generated report](research/runs/qwen2.5-1.5b-paired-160.md) are included.
+
 The first [Qwen2.5-0.5B experiment](research/runs/qwen2.5-0.5b-first-pass.md) evaluated 15 synthetic cases under four configurations. The initial small model produced **8–11 invalid decisions out of 15 trials per configuration**; therefore, zero executed attacks in defended conditions must **not** be interpreted as demonstrated prompt-injection robustness.
 
 The improved **paired replay protocol** makes two independent model proposals per case—one for the original prompt and one for the defended prompt—then replays each proposal under both host authorization settings. With 15 cases, this creates **60 agent outcomes from 30 actual model inferences** rather than 60 independent model queries. Model errors remain failures and are counted in all denominators. Synthetic local model outputs are retained for auditing; hosted provider output is not automatically logged.
